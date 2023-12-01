@@ -1,0 +1,9 @@
+{
+	"name": "adf0359Surya",
+	"location": "eastus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "3d254939-8bab-4342-b171-e53ec79ea09d",
+		"tenantId": "a7d9f37d-9b46-494a-bbb3-2ed7ff9b1b2f"
+	}
+}

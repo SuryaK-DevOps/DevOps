@@ -1,0 +1,257 @@
+{
+	"name": "Act2and3LocalToRawToSql",
+	"properties": {
+		"activities": [
+			{
+				"name": "Get File Meta Info",
+				"type": "GetMetadata",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataset": {
+						"referenceName": "SrcDsCSV",
+						"type": "DatasetReference"
+					},
+					"fieldList": [
+						"childItems"
+					],
+					"storeSettings": {
+						"type": "FileServerReadSettings",
+						"recursive": true,
+						"enablePartitionDiscovery": false
+					},
+					"formatSettings": {
+						"type": "DelimitedTextReadSettings"
+					}
+				}
+			},
+			{
+				"name": "ForEachFile",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "Get File Meta Info",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Get File Meta Info').output.childItems",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "Copy data1",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "DelimitedTextSource",
+									"storeSettings": {
+										"type": "FileServerReadSettings",
+										"recursive": true,
+										"wildcardFileName": {
+											"value": "@item().name",
+											"type": "Expression"
+										},
+										"enablePartitionDiscovery": false
+									},
+									"formatSettings": {
+										"type": "DelimitedTextReadSettings"
+									}
+								},
+								"sink": {
+									"type": "ParquetSink",
+									"storeSettings": {
+										"type": "AzureBlobFSWriteSettings"
+									},
+									"formatSettings": {
+										"type": "ParquetWriteSettings"
+									}
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "SrcDsCSV",
+									"type": "DatasetReference"
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "TgtDsParquet",
+									"type": "DatasetReference",
+									"parameters": {
+										"filename": {
+											"value": "@concat(replace(split(item().name,'_')[0],' ',''),'.parquet')",
+											"type": "Expression"
+										},
+										"folder": "@concat(substring(split(item().name,'_')[1],0,4 ),'-',substring(split(item().name,'_')[1],4,2),'-',substring(split(item().name,'_')[1],6,2))"
+									}
+								}
+							]
+						},
+						{
+							"name": "Set variable1",
+							"type": "SetVariable",
+							"dependsOn": [
+								{
+									"activity": "Copy data1",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "FileName",
+								"value": {
+									"value": "@replace(split(item().name,'_')[0],' ','')",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "Copy data2",
+							"type": "Copy",
+							"dependsOn": [
+								{
+									"activity": "Set variable1",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "ParquetSource",
+									"storeSettings": {
+										"type": "AzureBlobFSReadSettings",
+										"recursive": true,
+										"wildcardFolderPath": {
+											"value": "@concat(substring(split(item().name,'_')[1],0,4 ),'-',substring(split(item().name,'_')[1],4,2),'-',substring(split(item().name,'_')[1],6,2))",
+											"type": "Expression"
+										},
+										"wildcardFileName": {
+											"value": "@concat(variables('FileName'),'.parquet')",
+											"type": "Expression"
+										},
+										"enablePartitionDiscovery": false
+									},
+									"formatSettings": {
+										"type": "ParquetReadSettings"
+									}
+								},
+								"sink": {
+									"type": "AzureSqlSink",
+									"writeBehavior": "upsert",
+									"upsertSettings": {
+										"useTempDB": true,
+										"keys": [
+											"CustomerID"
+										]
+									},
+									"sqlWriterUseTableLock": false,
+									"tableOption": "autoCreate",
+									"disableMetricsCollection": false
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "SrcRawParquet",
+									"type": "DatasetReference"
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "AzureSqlTable1",
+									"type": "DatasetReference",
+									"parameters": {
+										"FileName": {
+											"value": "@variables('FileName')",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						}
+					]
+				}
+			}
+		],
+		"variables": {
+			"fname": {
+				"type": "String"
+			},
+			"FileName": {
+				"type": "String"
+			},
+			"Table1": {
+				"type": "String"
+			},
+			"Table2": {
+				"type": "String"
+			},
+			"TableAttributes": {
+				"type": "Array"
+			},
+			"TableContact": {
+				"type": "Array"
+			},
+			"Table name": {
+				"type": "String"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2023-12-01T07:19:05Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

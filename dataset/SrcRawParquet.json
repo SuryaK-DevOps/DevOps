@@ -1,0 +1,49 @@
+{
+	"name": "SrcRawParquet",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "AzureDataLakeStorage1",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Parquet",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileSystem": "raw"
+			},
+			"compressionCodec": "snappy"
+		},
+		"schema": [
+			{
+				"name": "S.No",
+				"type": "UTF8"
+			},
+			{
+				"name": "CustmerID",
+				"type": "UTF8"
+			},
+			{
+				"name": "Name",
+				"type": "UTF8"
+			},
+			{
+				"name": "Dob",
+				"type": "UTF8"
+			},
+			{
+				"name": "MaritalStatus",
+				"type": "UTF8"
+			},
+			{
+				"name": "Address",
+				"type": "UTF8"
+			},
+			{
+				"name": "Country",
+				"type": "UTF8"
+			}
+		]
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

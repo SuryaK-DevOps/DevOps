@@ -1,0 +1,115 @@
+{
+	"name": "ActivitySqlToJsonBronze",
+	"properties": {
+		"activities": [
+			{
+				"name": "ForEach1",
+				"type": "ForEach",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@variables('tablearray')",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "Set variable1",
+							"type": "SetVariable",
+							"dependsOn": [],
+							"policy": {
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "Table name",
+								"value": {
+									"value": "@item()",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "Copy data1",
+							"type": "Copy",
+							"dependsOn": [
+								{
+									"activity": "Set variable1",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "AzureSqlSource",
+									"sqlReaderQuery": {
+										"value": "@concat('SELECT * FROM  ',variables('Table name'))",
+										"type": "Expression"
+									},
+									"queryTimeout": "02:00:00",
+									"partitionOption": "None"
+								},
+								"sink": {
+									"type": "JsonSink",
+									"storeSettings": {
+										"type": "AzureBlobFSWriteSettings"
+									},
+									"formatSettings": {
+										"type": "JsonWriteSettings"
+									}
+								},
+								"enableStaging": false
+							},
+							"inputs": [
+								{
+									"referenceName": "AzureSqlTable2",
+									"type": "DatasetReference"
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "Json1",
+									"type": "DatasetReference",
+									"parameters": {
+										"Filename": {
+											"value": "@concat(split(item(),'.')[1],'.json')",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						}
+					]
+				}
+			}
+		],
+		"variables": {
+			"tablearray": {
+				"type": "Array",
+				"defaultValue": [
+					"dbo.EmployeeAttributes",
+					"dbo.employeeContact",
+					"dbo.EmployeeShiftDetails",
+					"dbo.EmployeeDesignation"
+				]
+			},
+			"Table name": {
+				"type": "String"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2023-12-01T07:19:05Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}
